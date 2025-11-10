@@ -1,5 +1,8 @@
-const axios = require('axios');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 const NodeCache = require('node-cache');
+
+const execPromise = promisify(exec);
 
 class ProjurisClient {
   constructor() {
@@ -19,7 +22,7 @@ class ProjurisClient {
   }
 
   /**
-   * Obtém token de autenticação OAuth2
+   * Obtém token de autenticação OAuth2 usando curl
    */
   async getToken() {
     const cachedToken = this.tokenCache.get('access_token');
@@ -28,63 +31,75 @@ class ProjurisClient {
     }
 
     try {
-      const params = new URLSearchParams();
-      params.append('grant_type', 'password');
-      params.append('username', this.user);
-      params.append('password', this.password);
-      params.append('client_id', this.clientId);
-      params.append('client_secret', this.clientSecret);
+      console.log('🔑 Obtendo token OAuth2 com curl...');
 
-      const response = await axios.post(this.tokenUrl, params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
+      const curlCommand = `curl -L -X POST "${this.tokenUrl}" \\
+        -H "Content-Type: application/x-www-form-urlencoded" \\
+        -d "grant_type=password&username=${encodeURIComponent(this.user)}&password=${encodeURIComponent(this.password)}&client_id=${encodeURIComponent(this.clientId)}&client_secret=${encodeURIComponent(this.clientSecret)}"`;
 
-      const token = response.data.access_token;
+      const { stdout, stderr } = await execPromise(curlCommand);
+
+      if (stderr && !stderr.includes('% Total')) {
+        console.error('⚠️  Curl stderr:', stderr);
+      }
+
+      const data = JSON.parse(stdout);
+      const token = data.access_token;
+
+      if (!token) {
+        throw new Error('Token não encontrado na resposta');
+      }
+
       this.tokenCache.set('access_token', token);
 
       console.log('✅ Token OAuth2 obtido com sucesso');
       return token;
     } catch (error) {
-      console.error('❌ Erro ao obter token:', error.response?.data || error.message);
-      throw new Error('Falha na autenticação com ProJuris: ' + (error.response?.data?.error_description || error.message));
+      console.error('❌ Erro ao obter token:', error.message);
+      throw new Error('Falha na autenticação com ProJuris: ' + error.message);
     }
   }
 
   /**
-   * Faz requisição autenticada à API ProJuris
+   * Faz requisição autenticada à API ProJuris usando curl
    */
   async makeRequest(endpoint, params = {}) {
     const token = await this.getToken();
 
     try {
-      const response = await axios.get(`${this.apiUrl}${endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        params: params
-      });
+      // Construir query string
+      const queryString = new URLSearchParams(params).toString();
+      const url = `${this.apiUrl}${endpoint}${queryString ? '?' + queryString : ''}`;
 
-      return response.data;
+      const curlCommand = `curl -L -X GET "${url}" \\
+        -H "Authorization: Bearer ${token}" \\
+        -H "Content-Type: application/json"`;
+
+      const { stdout, stderr } = await execPromise(curlCommand);
+
+      if (stderr && !stderr.includes('% Total')) {
+        console.error('⚠️  Curl stderr:', stderr);
+      }
+
+      const data = JSON.parse(stdout);
+      return data;
     } catch (error) {
-      console.error(`❌ Erro na requisição ${endpoint}:`, error.response?.data || error.message);
+      console.error(`❌ Erro na requisição ${endpoint}:`, error.message);
 
       // Se o token expirou, limpar cache e tentar novamente
-      if (error.response?.status === 401) {
+      if (error.message.includes('401')) {
         this.tokenCache.del('access_token');
         const newToken = await this.getToken();
 
-        const retryResponse = await axios.get(`${this.apiUrl}${endpoint}`, {
-          headers: {
-            'Authorization': `Bearer ${newToken}`,
-            'Content-Type': 'application/json'
-          },
-          params: params
-        });
+        const queryString = new URLSearchParams(params).toString();
+        const url = `${this.apiUrl}${endpoint}${queryString ? '?' + queryString : ''}`;
 
-        return retryResponse.data;
+        const curlCommand = `curl -L -X GET "${url}" \\
+          -H "Authorization: Bearer ${newToken}" \\
+          -H "Content-Type: application/json"`;
+
+        const { stdout } = await execPromise(curlCommand);
+        return JSON.parse(stdout);
       }
 
       throw error;
