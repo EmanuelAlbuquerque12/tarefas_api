@@ -2,6 +2,35 @@
 
 Dashboard analítico para visualização de tarefas e produtividade jurídica, integrado diretamente com a API do ProJuris. Elimina a necessidade de upload manual de planilhas XLSX.
 
+## 🚀 Início Rápido (Windows)
+
+**Duplo-clique em:**
+```
+iniciar.bat
+```
+
+Isso é tudo! O script irá:
+- ✅ Verificar pré-requisitos
+- ✅ Instalar dependências
+- ✅ Iniciar o servidor
+- ✅ Abrir o navegador automaticamente
+
+### Scripts Disponíveis (.bat)
+
+| Script | Descrição |
+|--------|-----------|
+| `iniciar.bat` | 🟢 Inicia tudo automaticamente (RECOMENDADO) |
+| `parar.bat` | 🔴 Para o servidor |
+| `testar.bat` | 🧪 Testa conexão com API ProJuris |
+| `configurar.bat` | ⚙️ Menu de configuração interativo |
+| `abrir-dashboard.bat` | 🌐 Abre o navegador (servidor já rodando) |
+
+**📖 Ver também:**
+- [INICIO_RAPIDO.md](INICIO_RAPIDO.md) - Guia detalhado
+- [LEIA-ME.txt](LEIA-ME.txt) - Instruções resumidas
+
+---
+
 ## 🎯 Características
 
 - **Integração Direta com API ProJuris**: Dados carregados automaticamente em tempo real
@@ -21,22 +50,39 @@ Dashboard analítico para visualização de tarefas e produtividade jurídica, i
 
 ## 🚀 Instalação
 
-### 1. Clone o repositório (se aplicável)
+### Opção A: Automática (Windows - RECOMENDADO)
+
+1. **Duplo-clique em `iniciar.bat`**
+2. Siga as instruções na tela
+3. Configure o `.env` quando solicitado
+4. Pronto! 🎉
+
+### Opção B: Manual (Todos os sistemas)
+
+#### 1. Clone o repositório (se aplicável)
 
 ```bash
 git clone <url-do-repositorio>
 cd tarefas_api
 ```
 
-### 2. Instale as dependências
+#### 2. Instale as dependências
 
 ```bash
 npm install
 ```
 
-### 3. Configure as variáveis de ambiente
+#### 3. Configure as variáveis de ambiente
 
-O arquivo `.env` já está configurado com suas credenciais ProJuris:
+Copie o arquivo de exemplo e edite com suas credenciais:
+
+```bash
+copy .env.example .env     # Windows
+# ou
+cp .env.example .env       # Linux/Mac
+```
+
+Edite o arquivo `.env` com suas credenciais ProJuris:
 
 ```env
 PROJURIS_DOMAIN=servidor
@@ -51,21 +97,38 @@ PORT=3000
 
 **⚠️ IMPORTANTE**: Não commite o arquivo `.env` com credenciais reais! Ele já está no `.gitignore`.
 
-### 4. Inicie o servidor
+#### 4. Teste a conexão (opcional mas recomendado)
 
+**Windows (duplo-clique):**
+```
+testar.bat
+```
+
+**Linha de comando:**
+```bash
+npm test
+```
+
+#### 5. Inicie o servidor
+
+**Windows (duplo-clique):**
+```
+iniciar.bat
+```
+
+**Linha de comando:**
 ```bash
 npm start
 ```
 
-Ou, para desenvolvimento com auto-reload:
-
+**Desenvolvimento com auto-reload:**
 ```bash
 npm run dev
 ```
 
-### 5. Acesse o dashboard
+#### 6. Acesse o dashboard
 
-Abra seu navegador em:
+O navegador abrirá automaticamente (se usar `iniciar.bat`), ou acesse manualmente:
 
 ```
 http://localhost:3000
@@ -75,10 +138,22 @@ http://localhost:3000
 
 ```
 tarefas_api/
+├── iniciar.bat                  # 🟢 Inicializador automático
+├── parar.bat                    # 🔴 Para o servidor
+├── testar.bat                   # 🧪 Testa conexão
+├── configurar.bat               # ⚙️  Menu de configuração
+├── abrir-dashboard.bat          # 🌐 Abre navegador
 ├── server.js                    # Servidor Express principal
 ├── package.json                 # Dependências do projeto
 ├── .env                         # Variáveis de ambiente (credenciais)
-├── .gitignore                   # Arquivos ignorados pelo git
+├── .env.example                 # Template de configuração
+├── test-connection.js           # Script de teste de conexão
+├── ecosystem.config.js          # Configuração PM2 (produção)
+├── README.md                    # Este arquivo
+├── INICIO_RAPIDO.md             # Guia de início rápido
+├── LEIA-ME.txt                  # Instruções resumidas
+├── CHANGELOG.md                 # Histórico de versões
+├── DEPLOYMENT.md                # Guia de deploy
 ├── services/
 │   └── projurisClient.js       # Cliente da API ProJuris
 ├── routes/
@@ -180,19 +255,38 @@ setInterval(loadDataFromAPI, 10 * 60 * 1000);
 
 ## 🛠️ Troubleshooting
 
-### Erro de autenticação
-Verifique se as credenciais no `.env` estão corretas e se o usuário tem permissão na API ProJuris.
+### ❌ "Node.js não encontrado"
+**Solução:** Instale o Node.js em https://nodejs.org/ (versão LTS recomendada)
 
-### Dados não carregam
-1. Verifique o console do navegador (F12)
-2. Verifique os logs do servidor
-3. Teste o endpoint: `http://localhost:3000/api/projuris/health`
-4. Limpe o cache usando o botão no dashboard
+### ❌ Erro de autenticação com ProJuris
+**Soluções:**
+1. Execute `configurar.bat` → Opção 1 (Editar .env)
+2. Execute `testar.bat` para diagnosticar
+3. Verifique se as credenciais estão corretas
+4. Confirme se o usuário tem permissão na API ProJuris
 
-### Performance lenta
+### ❌ Dados não carregam
+1. Execute `testar.bat` para verificar conexão
+2. Verifique o console do navegador (F12)
+3. Verifique os logs na janela do servidor
+4. Teste o endpoint: `http://localhost:3000/api/projuris/health`
+5. Use o botão "Limpar Cache" no dashboard
+
+### ❌ "Porta 3000 já em uso"
+**Solução:**
+1. Execute `parar.bat` para encerrar processos anteriores
+2. Ou edite `.env` e altere `PORT=3000` para outra porta
+
+### ❌ "Erro ao instalar dependências"
+**Soluções:**
+1. Execute `configurar.bat` → Opção 2 (Reinstalar)
+2. Verifique sua conexão com internet
+3. Execute como Administrador
+
+### ⚠️ Performance lenta
 1. Ajuste o tamanho da página na requisição (arquivo `routes/projuris.js`)
-2. Aumente o tempo de cache
-3. Considere filtrar dados na API antes de buscar
+2. Aumente o tempo de cache no `services/projurisClient.js`
+3. Use o botão "Limpar Cache" se os dados estiverem desatualizados
 
 ## 📊 Mapeamento de Campos
 
