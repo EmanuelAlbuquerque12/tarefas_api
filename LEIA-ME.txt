@@ -1,97 +1,95 @@
-╔════════════════════════════════════════════════════════════════╗
-║                                                                ║
-║        🚀 DASHBOARD PROJURIS - GUIA DE INÍCIO RÁPIDO 🚀       ║
-║                                                                ║
-╚════════════════════════════════════════════════════════════════╝
+================================================================
+        DASHBOARD PROJURIS - GUIA DE INICIO RAPIDO
+================================================================
 
-┌────────────────────────────────────────────────────────────────┐
-│  PARA COMEÇAR (Duplo-clique nos arquivos):                    │
-└────────────────────────────────────────────────────────────────┘
+----------------------------------------------------------------
+  PARA COMECAR (Duplo-clique nos arquivos):
+----------------------------------------------------------------
 
-   🟢 iniciar.bat
-      → Inicia TUDO automaticamente (RECOMENDADO)
-      → Instala dependências
-      → Abre navegador
-      → Pronto para usar!
+   iniciar.bat
+      -> Inicia TUDO automaticamente (RECOMENDADO)
+      -> Instala dependencias
+      -> Abre navegador
+      -> Pronto para usar!
 
 
-┌────────────────────────────────────────────────────────────────┐
-│  OUTROS COMANDOS ÚTEIS:                                        │
-└────────────────────────────────────────────────────────────────┘
+----------------------------------------------------------------
+  OUTROS COMANDOS UTEIS:
+----------------------------------------------------------------
 
-   🔴 parar.bat
-      → Para o servidor
+   parar.bat
+      -> Para o servidor
 
-   🧪 testar.bat
-      → Testa conexão com API ProJuris
-      → Use para diagnosticar problemas
+   testar.bat
+      -> Testa conexao com API ProJuris
+      -> Use para diagnosticar problemas
 
-   ⚙️  configurar.bat
-      → Menu interativo de configuração
-      → Editar credenciais
-      → Reinstalar dependências
-      → Limpar cache
+   configurar.bat
+      -> Menu interativo de configuracao
+      -> Editar credenciais
+      -> Reinstalar dependencias
+      -> Limpar cache
 
-   🌐 abrir-dashboard.bat
-      → Abre o navegador (servidor já deve estar rodando)
+   abrir-dashboard.bat
+      -> Abre o navegador (servidor ja deve estar rodando)
 
 
-┌────────────────────────────────────────────────────────────────┐
-│  PRIMEIRO USO:                                                 │
-└────────────────────────────────────────────────────────────────┘
+----------------------------------------------------------------
+  PRIMEIRO USO:
+----------------------------------------------------------------
 
    1. Duplo-clique em "iniciar.bat"
    2. Se solicitado, configure o arquivo .env com suas credenciais
    3. Dashboard abre automaticamente!
 
 
-┌────────────────────────────────────────────────────────────────┐
-│  PRÉ-REQUISITO:                                                │
-└────────────────────────────────────────────────────────────────┘
+----------------------------------------------------------------
+  PRE-REQUISITO:
+----------------------------------------------------------------
 
-   ⚠️  Node.js precisa estar instalado
-   📥 Download: https://nodejs.org/ (versão LTS)
-
-
-┌────────────────────────────────────────────────────────────────┐
-│  CREDENCIAIS PROJURIS:                                         │
-└────────────────────────────────────────────────────────────────┘
-
-   Você precisará configurar no arquivo .env:
-
-   • PROJURIS_DOMAIN
-   • PROJURIS_USER
-   • PROJURIS_PASSWORD
-   • PROJURIS_CLIENT_ID
-   • PROJURIS_CLIENT_SECRET
-
-   💡 Use "configurar.bat" para editar facilmente!
+   Node.js precisa estar instalado
+   Download: https://nodejs.org/ (versao LTS)
 
 
-┌────────────────────────────────────────────────────────────────┐
-│  PROBLEMAS?                                                    │
-└────────────────────────────────────────────────────────────────┘
+----------------------------------------------------------------
+  CREDENCIAIS PROJURIS:
+----------------------------------------------------------------
+
+   Voce precisara configurar no arquivo .env:
+
+   * PROJURIS_DOMAIN
+   * PROJURIS_USER
+   * PROJURIS_PASSWORD
+   * PROJURIS_CLIENT_ID
+   * PROJURIS_CLIENT_SECRET
+
+   Use "configurar.bat" para editar facilmente!
+
+
+----------------------------------------------------------------
+  PROBLEMAS?
+----------------------------------------------------------------
 
    1. Execute "testar.bat" para diagnosticar
    2. Verifique o arquivo README.md para mais detalhes
-   3. Veja INICIO_RAPIDO.md para solução de problemas
+   3. Veja INICIO_RAPIDO.md para solucao de problemas
 
 
-┌────────────────────────────────────────────────────────────────┐
-│  USO DIÁRIO:                                                   │
-└────────────────────────────────────────────────────────────────┘
+----------------------------------------------------------------
+  USO DIARIO:
+----------------------------------------------------------------
 
-   Manhã:    Duplo-clique em "iniciar.bat"
+   Manha:    Duplo-clique em "iniciar.bat"
    Trabalho: Use o dashboard normalmente
    Noite:    Duplo-clique em "parar.bat"
 
 
-═══════════════════════════════════════════════════════════════
+================================================================
 
-    📊 URL do Dashboard: http://localhost:3000
-    📚 Documentação completa: README.md
-    🆘 Guia rápido: INICIO_RAPIDO.md
+    URL do Dashboard: http://localhost:3000
+    Documentacao completa: README.md
+    Guia rapido: INICIO_RAPIDO.md
 
-═══════════════════════════════════════════════════════════════
+================================================================
 
-Desenvolvido com ⚖️ para otimizar a gestão jurídica
+Desenvolvido para otimizar a gestao juridica

@@ -1,30 +1,29 @@
 @echo off
-chcp 65001 >nul
 cls
 color 0E
 echo ========================================
-echo    Configuração - Dashboard ProJuris
+echo    Configuracao - Dashboard ProJuris
 echo ========================================
 echo.
 
-echo Este assistente ajudará você a configurar o Dashboard.
+echo Este assistente ajudara voce a configurar o Dashboard.
 echo.
-echo ─────────────────────────────────────────
+echo -----------------------------------------
 echo.
 
 :: Menu principal
 :menu
-echo Escolha uma opção:
+echo Escolha uma opcao:
 echo.
 echo [1] Editar credenciais da API (.env)
-echo [2] Reinstalar dependências
+echo [2] Reinstalar dependencias
 echo [3] Limpar cache e node_modules
-echo [4] Verificar instalação do Node.js
-echo [5] Abrir documentação (README)
+echo [4] Verificar instalacao do Node.js
+echo [5] Abrir documentacao (README)
 echo [6] Abrir pasta do projeto
 echo [0] Sair
 echo.
-choice /c 1234560 /n /m "Opção: "
+choice /c 1234560 /n /m "Opcao: "
 
 if errorlevel 7 goto end
 if errorlevel 6 goto open_folder
@@ -36,22 +35,22 @@ if errorlevel 1 goto edit_env
 
 :edit_env
 cls
-echo ✏️  Editando arquivo .env...
+echo Editando arquivo .env...
 echo.
 if not exist ".env" (
-    echo Arquivo .env não existe. Criando a partir do exemplo...
+    echo Arquivo .env nao existe. Criando a partir do exemplo...
     copy .env.example .env >nul
 )
 notepad .env
 echo.
-echo ✅ Arquivo salvo!
+echo Arquivo salvo!
 echo.
 pause
 goto menu
 
 :reinstall
 cls
-echo 🔄 Reinstalando dependências...
+echo Reinstalando dependencias...
 echo.
 echo Removendo node_modules...
 rmdir /s /q node_modules 2>nul
@@ -61,9 +60,9 @@ echo Instalando novamente...
 call npm install
 echo.
 if %errorlevel% equ 0 (
-    echo ✅ Dependências reinstaladas com sucesso!
+    echo Dependencias reinstaladas com sucesso!
 ) else (
-    echo ❌ Erro ao reinstalar dependências
+    echo ERRO: Falha ao reinstalar dependencias
 )
 echo.
 pause
@@ -71,10 +70,10 @@ goto menu
 
 :clean_all
 cls
-echo 🗑️  Limpando cache e dependências...
+echo Limpando cache e dependencias...
 echo.
-echo Você perderá:
-echo   - node_modules (será necessário reinstalar)
+echo Voce perdera:
+echo   - node_modules (sera necessario reinstalar)
 echo   - Cache do npm
 echo.
 echo Deseja continuar? (S/N)
@@ -87,56 +86,56 @@ rmdir /s /q node_modules 2>nul
 del package-lock.json 2>nul
 call npm cache clean --force
 echo.
-echo ✅ Limpeza concluída!
-echo    Execute "iniciar.bat" para reinstalar
+echo Limpeza concluida!
+echo Execute "iniciar.bat" para reinstalar
 echo.
 pause
 goto menu
 
 :check_node
 cls
-echo 🔍 Verificando instalação do Node.js...
+echo Verificando instalacao do Node.js...
 echo.
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ Node.js não instalado!
-    echo    Download: https://nodejs.org/
+    echo Node.js nao instalado!
+    echo Download: https://nodejs.org/
 ) else (
     for /f "tokens=*" %%i in ('node --version') do set NODE_VERSION=%%i
-    echo ✅ Node.js %NODE_VERSION%
+    echo Node.js %NODE_VERSION%
 )
 echo.
 npm --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ npm não instalado!
+    echo npm nao instalado!
 ) else (
     for /f "tokens=*" %%i in ('npm --version') do set NPM_VERSION=%%i
-    echo ✅ npm %NPM_VERSION%
+    echo npm %NPM_VERSION%
 )
 echo.
-echo Localização: %CD%
+echo Localizacao: %CD%
 echo.
 pause
 goto menu
 
 :open_readme
 cls
-echo 📖 Abrindo documentação...
+echo Abrindo documentacao...
 if exist "README.md" (
     start notepad README.md
 ) else (
-    echo ❌ README.md não encontrado
+    echo README.md nao encontrado
     pause
 )
 goto menu
 
 :open_folder
 cls
-echo 📁 Abrindo pasta do projeto...
+echo Abrindo pasta do projeto...
 explorer .
 goto menu
 
 :end
 echo.
-echo Até logo!
+echo Ate logo!
 timeout /t 2 /nobreak >nul
