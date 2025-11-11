@@ -19,6 +19,24 @@ class ProjurisClient {
 
     // Cache para dados (válido por 5 minutos)
     this.dataCache = new NodeCache({ stdTTL: 300 });
+
+    // Endpoints alternativos para tentar
+    this.tarefasEndpoints = [
+      '/tarefa/consulta-com-paginacao',
+      '/tarefas',
+      '/tarefa',
+      '/api/tarefas'
+    ];
+  }
+
+  /**
+   * Escapa caracteres especiais para uso em shell
+   * Envolve o argumento em aspas simples e escapa aspas simples internas
+   */
+  escapeShellArg(arg) {
+    if (!arg) return "''";
+    // Envolver em aspas simples e escapar aspas simples internas com '\''
+    return "'" + arg.replace(/'/g, "'\\''") + "'";
   }
 
   /**
@@ -27,27 +45,53 @@ class ProjurisClient {
   async getToken() {
     const cachedToken = this.tokenCache.get('access_token');
     if (cachedToken) {
+      console.log('📦 Token obtido do cache');
       return cachedToken;
     }
 
     try {
-      console.log('🔑 Obtendo token OAuth2 com curl...');
+      console.log('🔑 Obtendo novo token OAuth2...');
 
-      const curlCommand = `curl -L -X POST "${this.tokenUrl}" \\
-        -H "Content-Type: application/x-www-form-urlencoded" \\
-        -d "grant_type=password&username=${encodeURIComponent(this.user)}&password=${encodeURIComponent(this.password)}&client_id=${encodeURIComponent(this.clientId)}&client_secret=${encodeURIComponent(this.clientSecret)}"`;
+      // Usar --data-urlencode para lidar automaticamente com caracteres especiais
+      const curlCommand = `curl -s -L -X POST '${this.tokenUrl}' \
+        -H 'Content-Type: application/x-www-form-urlencoded' \
+        --data-urlencode 'grant_type=password' \
+        --data-urlencode 'username=${this.user}' \
+        --data-urlencode 'password=${this.password}' \
+        --data-urlencode 'client_id=${this.clientId}' \
+        --data-urlencode 'client_secret=${this.clientSecret}'`;
 
-      const { stdout, stderr } = await execPromise(curlCommand);
+      const { stdout, stderr } = await execPromise(curlCommand, {
+        maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+        timeout: 30000
+      });
 
-      if (stderr && !stderr.includes('% Total')) {
-        console.error('⚠️  Curl stderr:', stderr);
+      if (stderr && stderr.length > 0) {
+        console.warn('⚠️  Curl stderr:', stderr.substring(0, 200));
       }
 
-      const data = JSON.parse(stdout);
+      console.log('📡 Resposta do servidor (primeiros 500 chars):', stdout.substring(0, 500));
+
+      if (!stdout || stdout.trim().length === 0) {
+        console.error('❌ Resposta vazia do servidor de autenticação');
+        console.error('Comando executado:', curlCommand);
+        throw new Error('Resposta vazia do servidor de autenticação');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(stdout);
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear resposta JSON:', stdout.substring(0, 500));
+        console.error('Parse error:', parseError.message);
+        throw new Error('Resposta inválida do servidor de autenticação');
+      }
+
       const token = data.access_token;
 
       if (!token) {
-        throw new Error('Token não encontrado na resposta');
+        console.error('❌ Resposta da autenticação:', data);
+        throw new Error(data.error_description || data.error || 'Token não encontrado na resposta');
       }
 
       this.tokenCache.set('access_token', token);
@@ -63,7 +107,7 @@ class ProjurisClient {
   /**
    * Faz requisição autenticada à API ProJuris usando curl
    */
-  async makeRequest(endpoint, params = {}) {
+  async makeRequest(endpoint, params = {}, method = 'GET') {
     const token = await this.getToken();
 
     try {
@@ -71,34 +115,51 @@ class ProjurisClient {
       const queryString = new URLSearchParams(params).toString();
       const url = `${this.apiUrl}${endpoint}${queryString ? '?' + queryString : ''}`;
 
-      const curlCommand = `curl -L -X GET "${url}" \\
-        -H "Authorization: Bearer ${token}" \\
-        -H "Content-Type: application/json"`;
+      console.log(`🌐 Requisição: ${method} ${endpoint}`);
 
-      const { stdout, stderr } = await execPromise(curlCommand);
+      const curlCommand = `curl -s -L -X ${method} '${url}' \
+        -H 'Authorization: Bearer ${token}' \
+        -H 'Content-Type: application/json'`;
 
-      if (stderr && !stderr.includes('% Total')) {
-        console.error('⚠️  Curl stderr:', stderr);
+      const { stdout, stderr } = await execPromise(curlCommand, {
+        maxBuffer: 50 * 1024 * 1024, // 50MB buffer para respostas grandes
+        timeout: 60000
+      });
+
+      if (stderr && stderr.length > 0) {
+        console.warn('⚠️  Curl stderr:', stderr.substring(0, 200));
       }
 
-      const data = JSON.parse(stdout);
+      let data;
+      try {
+        data = JSON.parse(stdout);
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear JSON da resposta:', stdout.substring(0, 500));
+        throw new Error('Resposta inválida da API ProJuris');
+      }
+
       return data;
     } catch (error) {
       console.error(`❌ Erro na requisição ${endpoint}:`, error.message);
 
-      // Se o token expirou, limpar cache e tentar novamente
-      if (error.message.includes('401')) {
+      // Se o token expirou (401), limpar cache e tentar novamente
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        console.log('🔄 Token expirado, obtendo novo token...');
         this.tokenCache.del('access_token');
         const newToken = await this.getToken();
 
         const queryString = new URLSearchParams(params).toString();
         const url = `${this.apiUrl}${endpoint}${queryString ? '?' + queryString : ''}`;
 
-        const curlCommand = `curl -L -X GET "${url}" \\
-          -H "Authorization: Bearer ${newToken}" \\
-          -H "Content-Type: application/json"`;
+        const curlCommand = `curl -s -L -X ${method} '${url}' \
+          -H 'Authorization: Bearer ${newToken}' \
+          -H 'Content-Type: application/json'`;
 
-        const { stdout } = await execPromise(curlCommand);
+        const { stdout } = await execPromise(curlCommand, {
+          maxBuffer: 50 * 1024 * 1024,
+          timeout: 60000
+        });
+
         return JSON.parse(stdout);
       }
 
@@ -107,7 +168,7 @@ class ProjurisClient {
   }
 
   /**
-   * Busca tarefas com paginação
+   * Busca tarefas tentando múltiplos endpoints
    */
   async getTarefas(filters = {}) {
     const cacheKey = `tarefas_${JSON.stringify(filters)}`;
@@ -117,26 +178,48 @@ class ProjurisClient {
       return cached;
     }
 
-    try {
-      console.log('🔍 Buscando tarefas da API ProJuris...');
+    console.log('🔍 Buscando tarefas da API ProJuris...');
 
-      // Endpoint de consulta com paginação
-      const params = {
-        page: filters.page || 0,
-        size: filters.size || 1000, // Buscar até 1000 tarefas por vez
-        ...filters
-      };
+    // Tentar diferentes endpoints
+    for (const endpoint of this.tarefasEndpoints) {
+      try {
+        console.log(`📍 Tentando endpoint: ${endpoint}`);
 
-      const data = await this.makeRequest('/tarefa/consulta-com-paginacao', params);
+        const params = {
+          page: filters.page || 0,
+          size: filters.size || 100,
+          ...filters
+        };
 
-      console.log(`✅ ${data.content?.length || 0} tarefas recuperadas`);
+        const data = await this.makeRequest(endpoint, params);
 
-      this.dataCache.set(cacheKey, data);
-      return data;
-    } catch (error) {
-      console.error('❌ Erro ao buscar tarefas:', error.message);
-      throw error;
+        // Verificar se a resposta tem dados válidos
+        let tarefasCount = 0;
+        if (data.content) {
+          tarefasCount = data.content.length;
+        } else if (data.tarefas) {
+          tarefasCount = data.tarefas.length;
+        } else if (Array.isArray(data)) {
+          tarefasCount = data.length;
+        }
+
+        console.log(`✅ Endpoint ${endpoint} retornou ${tarefasCount} tarefas`);
+
+        if (tarefasCount > 0 || data.content || data.tarefas) {
+          this.dataCache.set(cacheKey, data);
+          return data;
+        }
+      } catch (error) {
+        console.warn(`⚠️  Endpoint ${endpoint} falhou:`, error.message);
+        continue; // Tentar próximo endpoint
+      }
     }
+
+    // Se nenhum endpoint funcionou, retornar estrutura vazia
+    console.warn('⚠️  Nenhum endpoint de tarefas retornou dados');
+    const emptyResult = { content: [], totalElements: 0, last: true };
+    this.dataCache.set(cacheKey, emptyResult);
+    return emptyResult;
   }
 
   /**
@@ -144,6 +227,7 @@ class ProjurisClient {
    */
   async getTarefaDetalhes(codigoTarefa) {
     try {
+      console.log(`🔍 Buscando detalhes da tarefa ${codigoTarefa}`);
       const data = await this.makeRequest(`/tarefa/${codigoTarefa}`);
       return data;
     } catch (error) {
@@ -159,23 +243,44 @@ class ProjurisClient {
     let allTasks = [];
     let page = 0;
     let hasMore = true;
+    const maxPages = 20; // Aumentado para 20 páginas (2000 tarefas)
 
-    while (hasMore) {
-      const response = await this.getTarefas({ ...filters, page, size: 100 });
+    console.log('📊 Iniciando busca paginada de tarefas...');
 
-      if (response.content && response.content.length > 0) {
-        allTasks = allTasks.concat(response.content);
-        page++;
-        hasMore = !response.last && response.content.length > 0;
-      } else {
+    while (hasMore && page < maxPages) {
+      try {
+        const response = await this.getTarefas({ ...filters, page, size: 100 });
+
+        // Extrair tarefas da resposta (suporta diferentes formatos)
+        let tasks = [];
+        if (response.content && Array.isArray(response.content)) {
+          tasks = response.content;
+        } else if (response.tarefas && Array.isArray(response.tarefas)) {
+          tasks = response.tarefas;
+        } else if (Array.isArray(response)) {
+          tasks = response;
+        }
+
+        if (tasks.length > 0) {
+          allTasks = allTasks.concat(tasks);
+          console.log(`📄 Página ${page + 1}: ${tasks.length} tarefas (total: ${allTasks.length})`);
+          page++;
+
+          // Verificar se há mais páginas
+          if (response.last === true || tasks.length < 100) {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error(`❌ Erro ao buscar página ${page}:`, error.message);
         hasMore = false;
       }
+    }
 
-      // Limite de segurança: máximo 10 páginas (1000 tarefas)
-      if (page >= 10) {
-        console.warn('⚠️  Limite de páginas atingido (10 páginas / 1000 tarefas)');
-        break;
-      }
+    if (page >= maxPages) {
+      console.warn(`⚠️  Limite de páginas atingido (${maxPages} páginas / ${allTasks.length} tarefas)`);
     }
 
     console.log(`✅ Total de ${allTasks.length} tarefas recuperadas`);
@@ -190,6 +295,7 @@ class ProjurisClient {
     if (cached) return cached;
 
     try {
+      console.log('👥 Buscando usuários...');
       const data = await this.makeRequest('/usuario');
       this.dataCache.set('usuarios', data);
       return data;
@@ -205,7 +311,20 @@ class ProjurisClient {
   clearCache() {
     this.tokenCache.flushAll();
     this.dataCache.flushAll();
-    console.log('🗑️  Cache limpo');
+    console.log('🗑️  Cache limpo com sucesso');
+  }
+
+  /**
+   * Informações de status do cliente
+   */
+  getStatus() {
+    return {
+      tokenCached: this.tokenCache.has('access_token'),
+      cacheKeys: this.dataCache.keys().length,
+      apiUrl: this.apiUrl,
+      user: this.user,
+      endpoints: this.tarefasEndpoints
+    };
   }
 }
 
